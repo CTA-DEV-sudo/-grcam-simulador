@@ -4,7 +4,7 @@ const W = (() => {
   const T = THREE;
   const LOW = /[?&]q=low/.test(location.search);
   const NOPOST = LOW || !/[?&]post=1/.test(location.search);
-  const TS = LOW ? 256 : 512;
+  const TS = LOW ? 256 : 768;
   let ANISO = 8;
 
   /* ---------- ruído ---------- */
@@ -327,7 +327,7 @@ const W = (() => {
     // pescoço e cabeça
     g.add(at(cyl(0.052, 0.06, 0.1, skin, 20), 0, 1.58, 0.005));
     const head = new T.Group(); head.position.set(0, 1.7, 0.01); g.add(head); head.userData.dyn = true;
-    const skull = lathe([[0.001, -0.118], [0.03, -0.113], [0.056, -0.098], [0.075, -0.07], [0.087, -0.035], [0.092, 0.005], [0.093, 0.04], [0.088, 0.075], [0.07, 0.105], [0.04, 0.123], [0.001, 0.128]], skin, 32);
+    const skull = lathe([[0.001, -0.118], [0.03, -0.113], [0.056, -0.098], [0.075, -0.07], [0.087, -0.035], [0.092, 0.005], [0.093, 0.04], [0.088, 0.075], [0.07, 0.105], [0.04, 0.123], [0.001, 0.128]], skin, 48);
     skull.scale.set(0.96, 1, 1.06); head.add(skull);
     const jaw = sphere(0.07, skin, undefined, 24, 14); jaw.scale.set(0.95, 0.8, 0.98); jaw.position.set(0, -0.065, 0.015); head.add(jaw);                       // mandíbula
     [-1, 1].forEach(s => { const ck = sphere(0.024, skin, undefined, 12, 8); ck.scale.set(1, 0.9, 0.8); ck.position.set(s * 0.05, -0.042, 0.06); head.add(ck); });  // maçãs do rosto
@@ -344,9 +344,19 @@ const W = (() => {
     if (stache) [-1, 1].forEach(s => { const m = box(0.03, 0.01, 0.012, hairM); m.position.set(s * 0.016, -0.054, lz + 0.001); m.rotation.z = s * 0.18; head.add(m); });
     if (beardOn) { const bd = sphere(0.074, hairM, undefined, 24, 12); bd.scale.set(0.95, 0.5, 0.88); bd.position.set(0, -0.094, 0.018); head.add(bd); [-1, 1].forEach(s => { const bc = sphere(0.024, hairM, undefined, 10, 8); bc.scale.set(0.7, 1.2, 0.9); bc.position.set(s * 0.062, -0.06, 0.03); head.add(bc); }); }
     const hairBack = sphere(0.09, hairM, undefined, 18, 10); hairBack.scale.set(0.98, 0.7, 0.92); hairBack.position.set(0, 0.01, -0.035); head.add(hairBack);
-    // óculos de segurança (lente escura e opaca: não mostra os olhos)
+    // óculos de segurança com lentes translúcidas e olhos visíveis por baixo
     const fr = MAT.flat(0x1b1b1b);
-    const lens2 = mesh(new T.CylinderGeometry(0.1, 0.1, 0.054, 32, 1, true, -1.0, 2.0), MAT.flat(0x141b21, { rough: 0.1, metal: 0.6, side: T.DoubleSide }), { cast: false });
+    const eyeWhite = MAT.flat(L(0xf2eee5), { rough: 0.42 });
+    const irisM = MAT.flat(L(0x765039), { rough: 0.32 });
+    const pupilM = MAT.flat(L(0x171614), { rough: 0.2 });
+    const glintM = MAT.flat(L(0xffffff), { rough: 0.12, emissive: L(0xffffff), ei: 0.08 });
+    [-1, 1].forEach(s => {
+      const eye = sphere(0.021, eyeWhite, undefined, 24, 16); eye.scale.set(1, 0.72, 0.48); eye.position.set(s * 0.037, 0.012, 0.091); head.add(eye);
+      const iris = sphere(0.0105, irisM, undefined, 20, 12); iris.scale.set(1, 1, 0.55); iris.position.set(s * 0.037, 0.011, 0.101); head.add(iris);
+      const pupil = sphere(0.0055, pupilM, undefined, 16, 10); pupil.scale.z = 0.5; pupil.position.set(s * 0.037, 0.011, 0.106); head.add(pupil);
+      const glint = sphere(0.0025, glintM, undefined, 10, 8); glint.position.set(s * 0.034, 0.015, 0.108); head.add(glint);
+    });
+    const lens2 = mesh(new T.CylinderGeometry(0.1, 0.1, 0.054, 40, 1, true, -1.0, 2.0), MAT.flat(0x5f7780, { rough: 0.18, metal: 0.18, opacity: 0.24, side: T.DoubleSide, depthWrite: false }), { cast: false });
     lens2.scale.set(0.97, 1, 1.07); lens2.position.set(0, 0.012, 0.0); head.add(lens2);
     [0.04, -0.016].forEach(y => { const f = mesh(new T.CylinderGeometry(0.1015, 0.1015, 0.007, 32, 1, true, -1.0, 2.0), fr, { cast: false }); f.scale.set(0.97, 1, 1.07); f.position.set(0, y, 0); head.add(f); });
     head.add(at(box(0.026, 0.012, 0.014, fr), 0, 0.012, 0.108));
@@ -647,14 +657,14 @@ const W = (() => {
     const wantPost = !NOPOST && !!window.WebGL2RenderingContext;
     const renderer = new T.WebGLRenderer({ antialias: !wantPost, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     const usePost = wantPost && renderer.capabilities.isWebGL2 && !!renderer.extensions.get('EXT_color_buffer_float');
-    ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    ANISO = Math.min(16, renderer.capabilities.getMaxAnisotropy());
     const exposure = o.exposure ?? 0.78;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1 : 1.75));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1 : 2));
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
     renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = usePost ? T.NoToneMapping : T.ACESFilmicToneMapping; renderer.toneMappingExposure = exposure;
     /* no modo HDR o fundo e a névoa entram "pré-invertidos" para o ACES devolver exatamente a cor original */
     const sceneCol = (hex) => usePost ? invTone(hex, exposure) : new T.Color(hex);
-    renderer.domElement.setAttribute('aria-label', 'Cena 3D interativa. Arraste para girar ou, no modo mover câmera, arraste para deslocar a vista. Use o botão direito para deslocar e a roda do mouse para aproximar ou afastar.');
+    renderer.domElement.setAttribute('aria-label', 'Cena 3D interativa. Use as setas do teclado para mover a vista panorâmica. Arraste para girar, o botão direito para deslocar e a roda para aproximar ou afastar.');
     renderer.domElement.tabIndex = 0;
     el.appendChild(renderer.domElement);
     const ov = document.createElement('div'); ov.className = 'v-ov'; el.appendChild(ov);
@@ -662,12 +672,13 @@ const W = (() => {
     scene.environment = buildEnv(renderer, 'shed'); envI.v = (o.env ?? 0.42) * 1.15;
     const camera = new T.PerspectiveCamera(o.fov ?? 40, 1.6, 0.15, 300); camera.position.set(...o.cam);
     const controls = new T.OrbitControls(camera, renderer.domElement);
+    controls.listenToKeyEvents(renderer.domElement); controls.keyPanSpeed = 18;
     controls.target.set(...o.target); controls.enableDamping = true; controls.dampingFactor = 0.075; controls.enablePan = true;
     controls.rotateSpeed = 0.72; controls.panSpeed = 0.78; controls.zoomSpeed = 0.82; controls.screenSpacePanning = true;
     controls.maxPolarAngle = o.maxPolar ?? 1.45; controls.minDistance = o.minD ?? 3; controls.maxDistance = o.maxD ?? 26;
     scene.add(new T.HemisphereLight(o.sky ?? 0xbcc8d6, o.gnd ?? 0x3a332c, o.hemi ?? 0.34));
     const sun = new T.DirectionalLight(o.sunColor ?? 0xffe2bd, o.sunI ?? 2.35); sun.position.set(...(o.sun ?? [10, 16, 6])); sun.castShadow = true;
-    const smap = LOW ? 1024 : 2048; sun.shadow.mapSize.set(smap, smap); const sc = o.shadowSize ?? 14;
+    const smap = LOW ? 1024 : (window.devicePixelRatio >= 2 ? 3072 : 2048); sun.shadow.mapSize.set(smap, smap); const sc = o.shadowSize ?? 14;
     Object.assign(sun.shadow.camera, { left: -sc, right: sc, top: sc, bottom: -sc, near: 1, far: 70 }); sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.018;
     sun.target.position.set(...o.target); scene.add(sun); scene.add(sun.target);
     const labels = [], ticks = [], motions = [], v = new T.Vector3(); let sideW = 0, activePerson = null;
@@ -734,6 +745,7 @@ const W = (() => {
     });
     renderer.domElement.addEventListener('pointerleave', () => { if (hover) setGlow(hover, false); hover = null; ctx.onHover && ctx.onHover(null); });
     renderer.domElement.addEventListener('pointerdown', e => {
+      renderer.domElement.focus({ preventScroll: true });
       tween = null;
       dragging = e.button === 0 || e.button === 2;
       down = e.button === 0 ? [e.clientX, e.clientY] : null;
@@ -889,7 +901,24 @@ const W = (() => {
         scene.add(at(plate(['ATENÇÃO', 'EQUIPAMENTO EM OPERAÇÃO'], 1.5, 0.55, { bg: '#d9a21c', fg: '#1b1f24', h: 220, w: 600, size: 44 }), -w * 0.22, 2.6, z0 + 0.03)); }
     }
     if (o.decals !== false) { const R = rng((o.seed ?? 7) * 101 + 3); for (let i = 0; i < 6; i++) stain(ctx, (R() - 0.5) * (w - 2), z0 + 2 + R() * (d - 3), 0.7 + R() * 1.6, i + 1, { alpha: 70 + R() * 90 }); }
-    if (o.roof !== false) { const roof = mesh(new T.PlaneGeometry(w, d), MAT.corr(0x6b7277, [w / 2.4, 1]), { cast: false }); roof.rotation.x = Math.PI / 2; at(roof, 0, h + 0.62, z0 + d / 2); roof.material.side = T.DoubleSide; scene.add(roof); }
+    if (o.roof !== false) {
+      const roof = mesh(new T.PlaneGeometry(w, d), MAT.corr(0x6b7277, [w / 2.4, 1]), { cast: false });
+      roof.rotation.x = Math.PI / 2; at(roof, 0, h + 0.62, z0 + d / 2); roof.material.side = T.DoubleSide; scene.add(roof);
+      const purlinMat = MAT.steel({ tint: 0x747d84, rough: 0.78, metal: 0.72 });
+      for (let z = z0 + 1.2; z < z0 + d; z += 2.4) {
+        const purlin = box(w, 0.055, 0.075, purlinMat, { cast: false }); at(purlin, 0, h + 0.54, z); scene.add(purlin);
+      }
+      const skylightMat = MAT.flat(0x9db8c4, { emissive: 0x587486, ei: 0.42, opacity: 0.38, rough: 0.28, metal: 0.12, side: T.DoubleSide, depthWrite: false });
+      const panelWidth = w * 0.62;
+      for (const ratio of [0.32, 0.68]) {
+        const z = z0 + d * ratio;
+        const panel = mesh(new T.PlaneGeometry(panelWidth, 1.3), skylightMat, { cast: false });
+        panel.rotation.x = -Math.PI / 2; at(panel, 0, h + 0.585, z); scene.add(panel);
+        [-0.68, 0.68].forEach(offset => {
+          const rail = box(panelWidth, 0.035, 0.045, purlinMat, { cast: false }); at(rail, 0, h + 0.55, z + offset); scene.add(rail);
+        });
+      }
+    }
   }
   let _halo; const haloTex = () => _halo || (_halo = new T.CanvasTexture(canvas(64, (g, s) => { const gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2); gr.addColorStop(0, 'rgba(255,255,255,.9)'); gr.addColorStop(0.25, 'rgba(255,255,255,.25)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s); })));
   /* manchas de óleo e marcas de uso no piso (decalques) */
