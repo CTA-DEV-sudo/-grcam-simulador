@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+html, body { margin: 0; min-height: 100%; background: #0d1014; color: #e9ebee; }
+body { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+.planta-root { min-height: 100vh; }
+.planta-root .top { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(16px); background: rgba(13,16,20,.92); }
+.planta-root .top h1 { letter-spacing: -.035em; }
+.planta-root .sa { border-radius: 12px; padding: 16px; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.planta-root .sa:hover { transform: translateY(-2px); }
+.planta-root .sa img { border-radius: 7px; }
+.planta-root .map { background: radial-gradient(ellipse at 58% 42%, rgba(224,164,58,.035), transparent 58%); }
+.planta-root .grp input { border-radius: 7px; }
+.planta-root .res button { border-radius: 6px; }
+.planta-simulation { min-height: 100vh; }
+:focus-visible { outline: 2px solid #e0a43a; outline-offset: 3px; }
+@media (max-width: 680px) {
+  .planta-root .top { align-items: flex-start; padding: 16px 18px; flex-direction: column; }
+  .planta-root .top h1 { font-size: 19px; }
+  .planta-root .list, .planta-root .map { padding: 20px 18px; }
+  .planta-root .sa { grid-template-columns: 108px 1fr; gap: 12px; padding: 10px; }
+  .planta-root .sa img { width: 108px; height: 86px; }
+}

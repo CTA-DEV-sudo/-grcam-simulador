@@ -1,0 +1,64 @@
+
+<div class="top">
+  <div><div class="eyebrow">Ambiente simulado · Situações de aprendizagem</div><h1>Gestão de Riscos Críticos em Atividades de Manutenção</h1></div>
+  <div class="grp"><label for="g">Grupo</label><input id="g" value="Grupo 1" maxlength="24"></div>
+</div>
+<main>
+  <section class="list">
+    <div class="eyebrow" style="color:var(--mu)">Turno A · 4 ordens de serviço</div>
+    <p class="lead">Uma equipe de manutenção (dois mecânicos e um eletricista) atravessa o turno. A pressão aumenta a cada situação. Em grupo, no projetor: leiam a cena, montem a AST, executem e decidam juntos.</p>
+    <div id="cards"></div>
+  </section>
+  <section class="map">
+    <div class="cap"><span>Planta esquemática · fora de escala</span><span>Equipamentos e TAGs fictícios</span></div>
+    <svg viewBox="0 0 1000 680" role="img" aria-label="Planta esquemática com Porto, Refinaria e Redução">
+      <defs>
+        <pattern id="gr" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="#1a2027" stroke-width="1"/></pattern>
+        <pattern id="sea" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0 5H10" stroke="#1d2a33" stroke-width="1"/></pattern>
+        <pattern id="ht" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 3H6" stroke="#3a4651" stroke-width="1"/></pattern>
+      </defs>
+      <rect width="1000" height="680" fill="url(#gr)"/>
+      <!-- mar -->
+      <path d="M0 470 C120 455 170 520 260 540 C340 560 380 640 420 680 L0 680Z" fill="#0f171d"/><path d="M0 470 C120 455 170 520 260 540 C340 560 380 640 420 680 L0 680Z" fill="url(#sea)"/>
+      <path d="M0 470 C120 455 170 520 260 540 C340 560 380 640 420 680" fill="none" stroke="#4b5966" stroke-width="1.2"/>
+      <g stroke="#56636f" fill="none" stroke-width="1">
+        <!-- porto -->
+        <path d="M150 505 L190 505 L190 600 L150 600Z" fill="#141a20"/>
+        <path d="M60 610 L160 610 L180 625 L160 640 L60 640 Z" fill="url(#ht)"/>
+        <rect x="60" y="613" width="22" height="24" fill="#141a20"/>
+        <path d="M170 520 L230 470 L300 420" stroke-dasharray="5 4"/>
+        <rect x="200" y="455" width="30" height="20" fill="#141a20"/>
+        <!-- correia longa até a refinaria -->
+        <path d="M300 420 L470 300" stroke="#7a6a52" stroke-dasharray="6 4" stroke-width="1.4"/>
+        <!-- refinaria -->
+        <rect x="430" y="150" width="250" height="190" fill="#11161b"/>
+        <g fill="#141a20">
+          <circle cx="480" cy="200" r="22"/><circle cx="530" cy="200" r="22"/><circle cx="580" cy="200" r="22"/>
+          <circle cx="480" cy="270" r="16"/><circle cx="520" cy="270" r="16"/><circle cx="560" cy="270" r="16"/>
+          <circle cx="640" cy="190" r="26"/><circle cx="640" cy="260" r="20"/>
+        </g>
+        <rect x="455" y="305" width="80" height="22" fill="url(#ht)"/><rect x="560" y="305" width="100" height="22" fill="#141a20"/>
+        <path d="M480 200 L640 190 M520 270 L640 260" stroke="#3d4853"/>
+        <!-- redução -->
+        <rect x="700" y="380" width="260" height="230" fill="#11161b"/>
+        <g fill="#141a20"><rect x="720" y="400" width="220" height="34"/><rect x="720" y="452" width="220" height="34"/><rect x="720" y="504" width="220" height="34"/></g>
+        <g stroke="#2f3943"><path d="M740 400v34M760 400v34M780 400v34M800 400v34M820 400v34M840 400v34M860 400v34M880 400v34M900 400v34M920 400v34M740 452v34M760 452v34M780 452v34M800 452v34M820 452v34M840 452v34M860 452v34M880 452v34M900 452v34M920 452v34M740 504v34M760 504v34M780 504v34M800 504v34M820 504v34M840 504v34M860 504v34M880 504v34M900 504v34M920 504v34"/></g>
+        <rect x="720" y="556" width="90" height="38" fill="url(#ht)"/>
+        <!-- vias -->
+        <path d="M300 80 L300 420 M300 360 L700 360 L960 360 M690 150 L690 640" stroke="#2a333c" stroke-width="6"/>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="12" letter-spacing="2" fill="#9aa3ad">
+        <text x="60" y="590">PORTO</text><text x="440" y="140">REFINARIA</text><text x="710" y="372">REDUÇÃO</text>
+        <text x="320" y="345" font-size="10" fill="#6d7681" transform="rotate(-35 320 345)">CORREIA · BAUXITA</text>
+        <text x="40" y="660" font-size="10" fill="#6d7681">NAVIO ATRACADO</text>
+      </g>
+      <g id="mk"></g>
+      <g transform="translate(905 70)" stroke="#6d7681" fill="none"><circle r="18"/><path d="M0 -26 L5 -6 L0 -10 L-5 -6Z" fill="#6d7681"/><text y="36" text-anchor="middle" fill="#6d7681" stroke="none" font-family="IBM Plex Mono, monospace" font-size="11">N</text></g>
+    </svg>
+  </section>
+</main>
+<section class="res">
+  <div class="hd"><h3>Resultados neste navegador</h3><button id="clr">Limpar resultados</button></div>
+  <div id="tbl"></div>
+  <p class="note">Os resultados ficam salvos só neste navegador (notebook do instrutor). Eventos de FSI e equipamentos são genéricos nesta versão.</p>
+</section>
