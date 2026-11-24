@@ -205,7 +205,7 @@
     };
   }
 
-  $('#tools').innerHTML = `<button class="tb" id="home" aria-label="Restaurar vista inicial" title="Restaurar vista inicial">Vista inicial</button><button class="tb" id="camera-mode" aria-pressed="false" title="Arraste para mover a câmera sem girar a cena">Mover câmera</button><div class="zoom-controls" aria-label="Controles de zoom"><button class="tb tb-icon" id="zoom-out" aria-label="Afastar a câmera" title="Afastar">−</button><button class="tb tb-icon" id="zoom-in" aria-label="Aproximar a câmera" title="Aproximar">+</button></div><span class="tb tb-help">Arraste para girar · ative Mover câmera para deslocar · roda para zoom</span>`;
+  $('#tools').innerHTML = `<button class="tb" id="home" aria-label="Restaurar vista inicial" title="Restaurar vista inicial">Vista inicial</button><button class="tb" id="camera-mode" aria-pressed="false" title="Arraste para mover a câmera sem girar a cena">Mover câmera</button><div class="zoom-controls" aria-label="Controles de zoom"><button class="tb tb-icon" id="zoom-out" aria-label="Afastar a câmera" title="Afastar">−</button><button class="tb tb-icon" id="zoom-in" aria-label="Aproximar a câmera" title="Aproximar">+</button></div><span class="tb tb-help">Setas movem a vista · arraste para girar · botão direito move · roda para zoom</span>`;
   let panMode = false;
   $('#camera-mode').onclick = () => {
     panMode = !panMode;
