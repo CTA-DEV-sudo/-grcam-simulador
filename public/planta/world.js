@@ -43,6 +43,16 @@ const W = (() => {
     const t = m[key] = new T.CanvasTexture(c); if (srgb) t.encoding = T.sRGBEncoding; t.anisotropy = ANISO;
     t.wrapS = t.wrapT = T.RepeatWrapping; if (repeat) t.repeat.set(repeat[0], repeat[1]); return t;
   }
+  const imageTexCache = new Map();
+  function imageTex(path, repeat, srgb = true) {
+    const key = path + '|' + (repeat ? repeat.join('x') : '1x1') + '|' + srgb;
+    if (imageTexCache.has(key)) return imageTexCache.get(key);
+    const t = new T.TextureLoader().load(path);
+    t.encoding = srgb ? T.sRGBEncoding : T.LinearEncoding;
+    t.anisotropy = ANISO; t.wrapS = t.wrapT = T.RepeatWrapping;
+    if (repeat) t.repeat.set(repeat[0], repeat[1]);
+    imageTexCache.set(key, t); return t;
+  }
   const hexRGB = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
   const cache = {};
   const once = (k, f) => cache[k] || (cache[k] = f());
@@ -60,7 +70,7 @@ const W = (() => {
       g2.strokeStyle = 'rgba(20,20,20,.35)'; g2.lineWidth = 2; g2.strokeRect(0, 0, s, s);
       for (let k = 0; k < 4; k++) { g2.strokeStyle = 'rgba(30,30,30,.25)'; g2.lineWidth = 1; g2.beginPath(); let x = R() * s, y = R() * s; g2.moveTo(x, y); for (let j = 0; j < 14; j++) { x += (R() - 0.5) * 40; y += (R() - 0.3) * 30; g2.lineTo(x, y); } g2.stroke(); }
       for (let k = 0; k < 3; k++) { const x = R() * s, y = R() * s, rr = 30 + R() * 80; const gr = g2.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, 'rgba(25,22,18,.18)'); gr.addColorStop(1, 'rgba(25,22,18,0)'); g2.fillStyle = gr; g2.beginPath(); g2.arc(x, y, rr, 0, 7); g2.fill(); }
-      const rough = fromPixels(s, (i) => { const v = 200 + (fine[i] - 0.5) * 60 - Math.max(0, stain[i] - 0.58) * 300; return [v, v, v]; });
+      const rough = fromPixels(s, (i) => { const v = 150 + (fine[i] - 0.5) * 44 - Math.max(0, stain[i] - 0.58) * 140; return [v, v, v]; });
       const h = new Float32Array(s * s); for (let i = 0; i < h.length; i++) h[i] = fine[i] * 0.6 + big[i] * 0.4;
       return { map: col, rough, normal: normalFrom(h, s, 3) };
     });
@@ -87,7 +97,8 @@ const W = (() => {
       const rows = new Float32Array(s); for (let y = 0; y < s; y++) rows[y] = R();
       const col = fromPixels(s, (i) => { const y = (i / s) | 0; const v = 0.86 + rows[y] * 0.1 + n[i] * 0.08; return [r * v, g * v, b * v]; });
       const rough = fromPixels(s, (i) => { const y = (i / s) | 0; const v = 70 + rows[y] * 60 + n[i] * 50; return [v, v, v]; });
-      return { map: col, rough };
+      const h = new Float32Array(s * s); for (let i = 0; i < h.length; i++) h[i] = n[i] * 0.25 + rows[(i / s) | 0] * 0.75;
+      return { map: col, rough, normal: normalFrom(h, s, 1.1) };
     });
   }
   function claddingSet(seed = 13) {
@@ -122,12 +133,12 @@ const W = (() => {
   const envI = { v: 0.55 };
   function std(o) { const { envI: intensity, coat, ...options } = o; const m = coat ? new T.MeshPhysicalMaterial(Object.assign(options, { clearcoat: coat, clearcoatRoughness: 0.32 })) : new T.MeshStandardMaterial(options); m.envMapIntensity = intensity ?? envI.v; return m; }
   const MAT = {
-    concrete: (rep = [8, 8], tint, seed) => { const s = concreteSet(tint, seed); return std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(0.6, 0.6), roughness: 1, metalness: 0 }); },
+    concrete: (rep = [8, 8], tint, seed) => { const s = concreteSet(tint, seed); return std({ map: LOW ? tex(s.map, rep) : imageTex('/planta/textures/worn-concrete.png?v=2', rep), color: LOW ? 0xffffff : (tint ?? 0xffffff), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(0.45, 0.45), roughness: 0.82, metalness: 0, coat: 0.16 }); },
     paint: (color, o = {}) => { const s = paintSet(color, o.wear ?? 0.5, o.seed ?? 3); const rep = o.rep || [1, 1]; return std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(0.5, 0.5), roughness: o.rough ?? 0.9, metalness: o.metal ?? 0.25, side: o.side ?? T.FrontSide, coat: o.coat || 0 }); },
-    steel: (o = {}) => { const s = brushedSet(o.tint ?? 0xb8bcc0, o.seed ?? 11); const rep = o.rep || [1, 1]; return std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), roughness: o.rough ?? 1, metalness: o.metal ?? 0.9, envI: 0.9 }); },
+    steel: (o = {}) => { const s = brushedSet(o.tint ?? 0xb8bcc0, o.seed ?? 11); const rep = o.rep || [1, 1]; return std({ map: LOW ? tex(s.map, rep) : imageTex('/planta/textures/brushed-stainless.png', rep), color: LOW ? 0xffffff : (o.tint ?? 0xffffff), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(0.12, 0.12), roughness: o.rough ?? 0.42, metalness: o.metal ?? 0.92, envI: 1.25 }); },
     galv: (o = {}) => { const s = paintSet(0xa9adb0, 0.15, 31); const rep = o.rep || [1, 1]; return std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), roughness: 0.8, metalness: 0.75, envI: 0.8 }); },
-    clad: (rep = [1, 1]) => { const s = claddingSet(); return std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), roughness: 1, metalness: 0.85, envI: 0.9 }); },
-    corr: (color, rep = [6, 1]) => { const s = corrugatedSet(color); return std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(1, 1), roughness: 1, metalness: 0.45 }); },
+    clad: (rep = [1, 1]) => { const s = claddingSet(); return std({ map: LOW ? tex(s.map, rep) : imageTex('/planta/textures/brushed-stainless.png', rep), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(0.25, 0.25), roughness: 0.48, metalness: 0.82, envI: 1.15 }); },
+    corr: (color, rep = [6, 1]) => { const s = corrugatedSet(color); return std({ map: LOW ? tex(s.map, rep) : imageTex('/planta/textures/corrugated-steel.png', rep), color: LOW ? 0xffffff : (color ?? 0xffffff), roughnessMap: tex(s.rough, rep, false), normalMap: tex(s.normal, rep, false), normalScale: new T.Vector2(0.8, 0.8), roughness: 0.72, metalness: 0.58, envI: 1.05 }); },
     rubber: (rep = [1, 1]) => { const s = rubberSet(); const m = std({ map: tex(s.map, rep), roughnessMap: tex(s.rough, rep, false), roughness: 1, metalness: 0 }); return m; },
     bauxite: (rep = [1, 1]) => { const s = bauxiteSet(); return std({ map: tex(s.map, rep), normalMap: tex(s.normal, rep, false), roughness: 0.95, metalness: 0 }); },
     flat: (color, o = {}) => std({ color, roughness: o.rough ?? 0.6, metalness: o.metal ?? 0.1, emissive: o.emissive ?? 0, emissiveIntensity: o.ei ?? 1, transparent: !!o.opacity, opacity: o.opacity ?? 1, side: o.side ?? T.FrontSide, depthWrite: o.depthWrite ?? true }),
@@ -658,7 +669,7 @@ const W = (() => {
     const renderer = new T.WebGLRenderer({ antialias: !wantPost, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     const usePost = wantPost && renderer.capabilities.isWebGL2 && !!renderer.extensions.get('EXT_color_buffer_float');
     ANISO = Math.min(16, renderer.capabilities.getMaxAnisotropy());
-    const exposure = o.exposure ?? 0.78;
+    const exposure = o.exposure ?? 0.88;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1 : 2));
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
     renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = usePost ? T.NoToneMapping : T.ACESFilmicToneMapping; renderer.toneMappingExposure = exposure;
@@ -669,18 +680,20 @@ const W = (() => {
     el.appendChild(renderer.domElement);
     const ov = document.createElement('div'); ov.className = 'v-ov'; el.appendChild(ov);
     const scene = new T.Scene(); scene.background = sceneCol(o.bg ?? 0x1b2026); scene.fog = new T.Fog(sceneCol(o.fog ?? o.bg ?? 0x1b2026), o.fogNear ?? 22, o.fogFar ?? 75);
-    scene.environment = buildEnv(renderer, 'shed'); envI.v = (o.env ?? 0.42) * 1.15;
+    scene.environment = buildEnv(renderer, 'shed'); envI.v = (o.env ?? 0.42) * 1.45;
     const camera = new T.PerspectiveCamera(o.fov ?? 40, 1.6, 0.15, 300); camera.position.set(...o.cam);
     const controls = new T.OrbitControls(camera, renderer.domElement);
     controls.listenToKeyEvents(renderer.domElement); controls.keyPanSpeed = 18;
     controls.target.set(...o.target); controls.enableDamping = true; controls.dampingFactor = 0.075; controls.enablePan = true;
     controls.rotateSpeed = 0.72; controls.panSpeed = 0.78; controls.zoomSpeed = 0.82; controls.screenSpacePanning = true;
     controls.maxPolarAngle = o.maxPolar ?? 1.45; controls.minDistance = o.minD ?? 3; controls.maxDistance = o.maxD ?? 26;
-    scene.add(new T.HemisphereLight(o.sky ?? 0xbcc8d6, o.gnd ?? 0x3a332c, o.hemi ?? 0.34));
-    const sun = new T.DirectionalLight(o.sunColor ?? 0xffe2bd, o.sunI ?? 2.35); sun.position.set(...(o.sun ?? [10, 16, 6])); sun.castShadow = true;
+    scene.add(new T.HemisphereLight(o.sky ?? 0xc4d0dc, o.gnd ?? 0x39342f, o.hemi ?? 0.4));
+    const sun = new T.DirectionalLight(o.sunColor ?? 0xffedda, o.sunI ?? 2.25); sun.position.set(...(o.sun ?? [10, 16, 6])); sun.castShadow = true;
     const smap = LOW ? 1024 : (window.devicePixelRatio >= 2 ? 3072 : 2048); sun.shadow.mapSize.set(smap, smap); const sc = o.shadowSize ?? 14;
     Object.assign(sun.shadow.camera, { left: -sc, right: sc, top: sc, bottom: -sc, near: 1, far: 70 }); sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.018;
     sun.target.position.set(...o.target); scene.add(sun); scene.add(sun.target);
+    const fill = new T.DirectionalLight(0xdce7f0, 0.42); fill.position.set(-8, 9, 10); scene.add(fill);
+    const rim = new T.DirectionalLight(0xffdfb8, 0.24); rim.position.set(4, 10, -8); scene.add(rim);
     const labels = [], ticks = [], motions = [], v = new T.Vector3(); let sideW = 0, activePerson = null;
     function resize() {
       const w = el.clientWidth || window.innerWidth, h = el.clientHeight || window.innerHeight;
