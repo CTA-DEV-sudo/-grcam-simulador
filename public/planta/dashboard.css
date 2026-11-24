@@ -33,7 +33,8 @@ main{display:grid;grid-template-columns:minmax(420px,520px) 1fr;min-height:calc(
 .res th{text-align:left;font:500 11px var(--m);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);padding:8px;border-bottom:1px solid var(--line2)}
 .res td{padding:9px 8px;border-bottom:1px solid var(--line)}
 .res td.n{font-family:var(--m)}
-.res .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.res .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.res .actions{display:flex;flex-wrap:wrap;gap:8px}
 .res h3{font:600 12px var(--m);letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin:0}
 .res button{background:none;border:1px solid var(--line2);color:var(--mu);font:500 12px var(--m);padding:7px 10px;cursor:pointer}
 .empty{color:var(--mu2);font-size:14.5px}
