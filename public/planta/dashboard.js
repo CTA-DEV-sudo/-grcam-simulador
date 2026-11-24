@@ -15,5 +15,6 @@ function draw(){
   document.getElementById('tbl').innerHTML=rows.length?`<table><tr><th>Grupo</th><th>Situação</th><th>Pontos</th><th>Críticos</th><th>Falhas</th><th>Data</th></tr>${rows.map(r=>`<tr><td>${esc(r.grupo)}</td><td>SA${r.sa} · ${esc(SAS[r.sa-1].area)}</td><td class="n">${r.score}</td><td class="n">${esc(r.crit)}</td><td class="n">${esc((r.fails||[]).join(' ')||'—')}</td><td class="n">${new Date(r.data).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}</td></tr>`).join('')}</table>`:'<p class="empty">Nenhuma situação concluída ainda.</p>';
 }
 function hl(id,on){document.querySelectorAll(`[data-sa="${id}"]`).forEach(e=>e.classList.toggle('hl',!!on))}
+document.getElementById('clr-g1').onclick=()=>{st.set('rc2_results',JSON.stringify(results().filter(r=>r.grupo!=='Grupo 1')));draw()};
 document.getElementById('clr').onclick=()=>{st.set('rc2_results','[]');draw()};
 draw();
