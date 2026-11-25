@@ -238,28 +238,36 @@ const W = (() => {
     const seam = MAT.flat(new T.Color(sc).multiplyScalar(0.45).getHex(), { rough: 1, metal: 0 });
     const dark = MAT.flat(0x15161a, { rough: 0.6, metal: 0.3 }), white = MAT.flat(L(0xeceae4), { rough: 0.3 }), lipM = MAT.flat(L(0x7a4036), { rough: 0.5 }), hairM = MAT.flat(L(hairHex), { rough: 0.9 });
     const band = (r, y, parent, sz = 1, h = 0.03) => { const b = cyl(r, r, h, refl, 28, { cast: false }); b.position.y = y; b.scale.z = sz; parent.add(b); };
-    // pernas
-    const legs = [];
+    // pernas: articuladas no quadril (hip) e no joelho (knee), para o passo girar a partir da cintura
+    // e não a partir do pé. As peças são posicionadas em coordenadas do corpo (y = altura do chão)
+    // dentro de "up" (coxa) e "lo" (canela + bota), que compensam a altura das articulações.
+    const legs = [], HIP_Y = 0.93, KNEE_Y = 0.5;
     [-1, 1].forEach(s => {
-      const hip = new T.Group(); hip.position.set(s * 0.095, 0, 0); hip.userData.dyn = true;
-      hip.add(lathe([[0.001, 0.08], [0.058, 0.085], [0.062, 0.16], [0.066, 0.26], [0.07, 0.36], [0.068, 0.46], [0.073, 0.52], [0.082, 0.62], [0.09, 0.74], [0.096, 0.86], [0.092, 0.93], [0.06, 0.97], [0.001, 0.98]], suit, 28));
-      band(0.068, 0.27, hip); band(0.07, 0.35, hip);
-      hip.add(at(rbox(0.1, 0.11, 0.03, suit, 0.015), 0, 0.5, 0.072));                                  // joelheira costurada
-      hip.add(at(box(0.1, 0.006, 0.032, seam), 0, 0.557, 0.073)); hip.add(at(box(0.1, 0.006, 0.032, seam), 0, 0.443, 0.073));
-      hip.add(at(rbox(0.03, 0.14, 0.11, suit, 0.012), s * 0.089, 0.72, 0.012));                         // bolso lateral
-      hip.add(at(box(0.034, 0.008, 0.112, seam), s * 0.09, 0.79, 0.012));
-      { const c = torus(0.07, 0.008, seam, Math.PI * 2, { cast: false }); c.rotation.x = Math.PI / 2; c.position.y = 0.5; hip.add(c); }       // vinco do joelho
-      { const c = torus(0.078, 0.014, suit, Math.PI * 2, { cast: false }); c.rotation.x = Math.PI / 2; c.position.y = 0.2; hip.add(c); }        // calça caindo sobre a bota
-      hip.add(at(cyl(0.062, 0.067, 0.12, boot, 24), 0, 0.11, 0));
-      { const c = torus(0.066, 0.013, padM, Math.PI * 2, { cast: false }); c.rotation.x = Math.PI / 2; c.position.y = 0.168; hip.add(c); }      // gáspea acolchoada do cano
-      hip.add(at(rbox(0.11, 0.085, 0.27, boot, 0.04), 0, 0.055, 0.045));
-      hip.add(at(rbox(0.108, 0.055, 0.095, bootCap, 0.024), 0, 0.05, 0.145));                            // bico de aço
-      hip.add(at(rbox(0.05, 0.075, 0.02, boot, 0.008), 0, 0.14, 0.066));                                 // lingueta
-      [0.095, 0.118, 0.141].forEach((y, i) => { const lc = box(0.075, 0.007, 0.012, lace, { cast: false }); lc.position.set(0, y, 0.071 + i * 0.002); lc.rotation.z = (i % 2 ? 1 : -1) * 0.18; hip.add(lc); });  // cadarço cruzado
-      hip.add(at(rbox(0.1, 0.03, 0.05, boot, 0.012), 0, 0.105, 0.02));
-      hip.add(at(rbox(0.118, 0.03, 0.285, sole, 0.01), 0, 0.014, 0.045));
-      hip.add(at(rbox(0.105, 0.03, 0.05, sole, 0.01), 0, 0.03, -0.075));                                 // salto
+      const hip = new T.Group(); hip.position.set(s * 0.095, HIP_Y, 0); hip.userData.dyn = true;
+      const up = new T.Group(); up.position.y = -HIP_Y; hip.add(up);
+      const knee = new T.Group(); knee.position.y = KNEE_Y - HIP_Y; knee.userData.dyn = true; hip.add(knee);
+      const lo = new T.Group(); lo.position.y = -KNEE_Y; knee.add(lo);
+      up.add(lathe([[0.001, 0.47], [0.066, 0.475], [0.073, 0.52], [0.082, 0.62], [0.09, 0.74], [0.096, 0.86], [0.092, 0.93], [0.06, 0.97], [0.001, 0.98]], suit, 28));   // coxa
+      up.add(at(sphere(0.07, suit, undefined, 20, 12), 0, KNEE_Y, 0));                                // volume do joelho (cobre a dobra)
+      lo.add(lathe([[0.001, 0.08], [0.058, 0.085], [0.062, 0.16], [0.066, 0.26], [0.07, 0.36], [0.068, 0.46], [0.071, 0.53], [0.001, 0.535]], suit, 28));          // canela
+      band(0.068, 0.27, lo); band(0.07, 0.35, lo);
+      lo.add(at(rbox(0.1, 0.11, 0.03, suit, 0.015), 0, 0.5, 0.072));                                  // joelheira costurada
+      lo.add(at(box(0.1, 0.006, 0.032, seam), 0, 0.557, 0.073)); lo.add(at(box(0.1, 0.006, 0.032, seam), 0, 0.443, 0.073));
+      up.add(at(rbox(0.03, 0.14, 0.11, suit, 0.012), s * 0.089, 0.72, 0.012));                         // bolso lateral
+      up.add(at(box(0.034, 0.008, 0.112, seam), s * 0.09, 0.79, 0.012));
+      { const c = torus(0.07, 0.008, seam, Math.PI * 2, { cast: false }); c.rotation.x = Math.PI / 2; c.position.y = 0.5; lo.add(c); }        // vinco do joelho
+      { const c = torus(0.078, 0.014, suit, Math.PI * 2, { cast: false }); c.rotation.x = Math.PI / 2; c.position.y = 0.2; lo.add(c); }       // calça caindo sobre a bota
+      lo.add(at(cyl(0.062, 0.067, 0.12, boot, 24), 0, 0.11, 0));
+      { const c = torus(0.066, 0.013, padM, Math.PI * 2, { cast: false }); c.rotation.x = Math.PI / 2; c.position.y = 0.168; lo.add(c); }     // gáspea acolchoada do cano
+      lo.add(at(rbox(0.11, 0.085, 0.27, boot, 0.04), 0, 0.055, 0.045));
+      lo.add(at(rbox(0.108, 0.055, 0.095, bootCap, 0.024), 0, 0.05, 0.145));                            // bico de aço
+      lo.add(at(rbox(0.05, 0.075, 0.02, boot, 0.008), 0, 0.14, 0.066));                                 // lingueta
+      [0.095, 0.118, 0.141].forEach((y, i) => { const lc = box(0.075, 0.007, 0.012, lace, { cast: false }); lc.position.set(0, y, 0.071 + i * 0.002); lc.rotation.z = (i % 2 ? 1 : -1) * 0.18; lo.add(lc); });  // cadarço cruzado
+      lo.add(at(rbox(0.1, 0.03, 0.05, boot, 0.012), 0, 0.105, 0.02));
+      lo.add(at(rbox(0.118, 0.03, 0.285, sole, 0.01), 0, 0.014, 0.045));
+      lo.add(at(rbox(0.105, 0.03, 0.05, sole, 0.01), 0, 0.03, -0.075));                                 // salto
       hip.rotation.y = s * 0.1; hip.rotation.z = s * 0.012;
+      hip.userData.knee = knee; hip.userData.rest = { x: hip.rotation.x, z: hip.rotation.z }; knee.userData.rest = 0;
       g.add(hip); legs.push(hip);
     });
     // quadril e tronco
@@ -389,9 +397,12 @@ const W = (() => {
     const peak = mesh(new T.RingGeometry(0.128, 0.168, 32, 1, Math.PI * 1.15, Math.PI * 0.7), helmM); peak.rotation.x = -Math.PI / 2 + 0.16; peak.position.set(0, 0.036, 0.02); peak.scale.set(1, 1.1, 1); peak.material.side = T.DoubleSide; head.add(peak);
     const rim = torus(0.131, 0.008, helmM); rim.rotation.x = Math.PI / 2; rim.scale.set(1, 1.1, 1); rim.position.y = 0.035; head.add(rim);
     head.rotation.x = 0.04; head.rotation.y = o.look ?? 0;
-    legs.forEach(h => bake(h)); arms.forEach(sh => { bake(sh.userData.elbow.children.find(c => c.userData.dyn) || sh); bake(sh.userData.elbow); bake(sh); }); bake(head); bake(g);
+    // coluna: tronco, braços e cabeça giram juntos a partir da cintura (para se inclinar sobre o equipamento)
+    const spine = new T.Group(); spine.position.set(0, 1.02, 0); spine.userData.dyn = true; g.add(spine); g.updateMatrixWorld(true);
+    { const bb = new T.Box3(); g.children.slice().forEach(ch => { if (ch === spine || legs.includes(ch)) return; bb.setFromObject(ch); if ((bb.min.y + bb.max.y) / 2 > 1.06) spine.attach(ch); }); }
+    legs.forEach(h => { bake(h.userData.knee); bake(h); }); arms.forEach(sh => { bake(sh.userData.elbow.children.find(c => c.userData.dyn) || sh); bake(sh.userData.elbow); bake(sh); }); bake(head); bake(spine); bake(g);
     g.scale.set(bw, bh, bw);
-    g.userData.arms = arms; g.userData.hands = hands; g.userData.head = head; g.userData.legs = legs;
+    g.userData.arms = arms; g.userData.hands = hands; g.userData.head = head; g.userData.legs = legs; g.userData.spine = spine;
     g.userData.ph = Math.random() * 6;
     g.onBeforeRender = () => { };
     PEOPLE.push(g);
@@ -399,44 +410,283 @@ const W = (() => {
   }
   const PEOPLE = [];
   function animPeople(t) { PEOPLE.forEach(p => { const ph = p.userData.ph; p.userData.head.rotation.y = (p.userData.look0 ??= p.userData.head.rotation.y) + Math.sin(t * 0.35 + ph) * 0.18; }); }
+  /* ---------- navegação no piso ----------
+     Mapa de ocupação 2D (células de 10 cm) feito a partir da geometria real da cena: todo triângulo que
+     ocupa a faixa de altura do corpo (0,12 m a 1,75 m) bloqueia as células que cobre. O mapa é inflado
+     pelo raio do corpo, e o caminho é calculado com Dijkstra + "string pulling", para que os bonecos
+     contornem máquinas, tubulações, painéis e outras pessoas em vez de atravessá-los. */
+  const NAV = { cell: 0.1, body: 0.3, foot: 0.22, knee: 0.55, yMin: 0.12, yMax: 1.75, half: 26, stand: 0.75, personR: 0.26 };   // abaixo do joelho basta a folga dos pés
+  function diskOffsets(r) { const n = Math.ceil(r / NAV.cell), out = []; for (let k = -n; k <= n; k++) for (let i = -n; i <= n; i++) if ((i * i + k * k) * NAV.cell * NAV.cell <= r * r) out.push([i, k]); return out; }
+  function buildNav(scene, cx, cz) {
+    const C = NAV.cell, N = Math.ceil(NAV.half * 2 / C), x0 = cx - NAV.half, z0 = cz - NAV.half, occLo = new Uint8Array(N * N), occHi = new Uint8Array(N * N); let occ = occHi;
+    const set = (x, z) => { const i = Math.floor((x - x0) / C), k = Math.floor((z - z0) / C); if (i >= 0 && k >= 0 && i < N && k < N) occ[k * N + i] = 1; };
+    const line = (ax, az, bx, bz) => { const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / (C * 0.5))); for (let j = 0; j <= n; j++) set(ax + (bx - ax) * j / n, az + (bz - az) * j / n); };
+    scene.updateMatrixWorld(true);
+    const wb = new T.Box3(), v = new T.Vector3();
+    scene.traverse(o => {
+      if (!o.isMesh || o.isInstancedMesh || !o.geometry || !o.geometry.attributes.position) return;
+      for (let q = o; q; q = q.parent) if (q.visible === false || q.userData.through || q.userData.legs) return;   // ignora invisíveis, efeitos e pessoas
+      const m = o.material; if (m && !Array.isArray(m) && m.transparent && m.depthWrite === false) return;         // feixes de luz, decalques
+      const g = o.geometry; if (!g.boundingBox) g.computeBoundingBox();
+      wb.copy(g.boundingBox).applyMatrix4(o.matrixWorld);
+      if (wb.max.y < NAV.yMin || wb.min.y > NAV.yMax) return;
+      if (wb.max.x < x0 || wb.min.x > x0 + N * C || wb.max.z < z0 || wb.min.z > z0 + N * C) return;
+      if ((wb.max.x - wb.min.x) > NAV.half * 3 && (wb.max.z - wb.min.z) > NAV.half * 3) return;                   // cúpula/fundo gigante
+      const pos = g.attributes.position, P = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); P[i * 3] = v.x; P[i * 3 + 1] = v.y; P[i * 3 + 2] = v.z; }
+      const idx = g.index, triCount = idx ? idx.count / 3 : pos.count / 3;
+      for (let t = 0; t < triCount; t++) {
+        const a = idx ? idx.getX(t * 3) : t * 3, b = idx ? idx.getX(t * 3 + 1) : t * 3 + 1, c = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+        const ay = P[a * 3 + 1], by = P[b * 3 + 1], cy = P[c * 3 + 1];
+        const tyMin = Math.min(ay, by, cy), tyMax = Math.max(ay, by, cy);
+        if (tyMax < NAV.yMin || tyMin > NAV.yMax) continue;
+        for (const layer of [tyMin < NAV.knee ? occLo : null, tyMax >= NAV.knee ? occHi : null]) { if (!layer) continue; occ = layer;
+        const ax = P[a * 3], az = P[a * 3 + 2], bx = P[b * 3], bz = P[b * 3 + 2], cx2 = P[c * 3], cz2 = P[c * 3 + 2];
+        line(ax, az, bx, bz); line(bx, bz, cx2, cz2); line(cx2, cz2, ax, az);
+        const area = (bx - ax) * (cz2 - az) - (bz - az) * (cx2 - ax);
+        if (Math.abs(area) < C * C * 0.5) continue;                                                              // face vertical: as arestas bastam
+        const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx2) - x0) / C)), i1 = Math.min(N - 1, Math.floor((Math.max(ax, bx, cx2) - x0) / C));
+        const k0 = Math.max(0, Math.floor((Math.min(az, bz, cz2) - z0) / C)), k1 = Math.min(N - 1, Math.floor((Math.max(az, bz, cz2) - z0) / C));
+        for (let k = k0; k <= k1; k++) for (let i = i0; i <= i1; i++) {
+          const px = x0 + (i + 0.5) * C, pz = z0 + (k + 0.5) * C;
+          const w0 = ((bx - px) * (cz2 - pz) - (bz - pz) * (cx2 - px)) / area, w1 = ((cx2 - px) * (az - pz) - (cz2 - pz) * (ax - px)) / area;
+          if (w0 >= 0 && w1 >= 0 && w0 + w1 <= 1) occ[k * N + i] = 1;
+        }
+        }
+      }
+    });
+    const blk = new Uint8Array(N * N);                                                                           // infla pelo raio do corpo (e dos pés, embaixo)
+    for (const [src, D] of [[occHi, diskOffsets(NAV.body)], [occLo, diskOffsets(NAV.foot)]])
+    for (let k = 0; k < N; k++) for (let i = 0; i < N; i++) if (src[k * N + i]) D.forEach(([di, dk]) => { const ii = i + di, kk = k + dk; if (ii >= 0 && kk >= 0 && ii < N && kk < N) blk[kk * N + ii] = 1; });
+    return { N, x0, z0, blk };
+  }
+  function navSignature(scene) {                                                                                 // visibilidade + posição (10 cm) do que pode bloquear o caminho
+    let h = 0; scene.updateMatrixWorld(true);
+    const walk = (o) => {
+      if (o.userData.legs || o.userData.through) return;                                                          // pessoas e efeitos não entram
+      h = (h * 31 + (o.visible ? 1 : 2)) | 0; if (!o.visible) return;
+      if (o.isMesh) { const e = o.matrixWorld.elements; if (e[13] < NAV.yMax + 1) { h = (h * 31 + Math.round(e[12] * 10)) | 0; h = (h * 31 + Math.round(e[14] * 10)) | 0; } }
+      for (const c of o.children) walk(c);
+    };
+    walk(scene); return h;
+  }
+  function planPath(nav, sx, sz, tx, tz, others, stand = NAV.stand) {
+    const { N, x0, z0 } = nav, C = NAV.cell, blk = nav.blk.slice();
+    const D = diskOffsets(NAV.personR + NAV.body);
+    others.forEach(([x, z]) => { const i = Math.floor((x - x0) / C), k = Math.floor((z - z0) / C); D.forEach(([di, dk]) => { const ii = i + di, kk = k + dk; if (ii >= 0 && kk >= 0 && ii < N && kk < N) blk[kk * N + ii] = 1; }); });
+    const cellOf = (x, z) => [Math.min(N - 1, Math.max(0, Math.floor((x - x0) / C))), Math.min(N - 1, Math.max(0, Math.floor((z - z0) / C)))];
+    const wx = (i) => x0 + (i + 0.5) * C, wz = (k) => z0 + (k + 0.5) * C;
+    let [si, sk] = cellOf(sx, sz);
+    if (blk[sk * N + si]) {                                                                                       // começou encostado num obstáculo: sai pela célula livre mais próxima
+      let best = null, bd = Infinity; const R = Math.ceil(2.5 / C);
+      for (let k = Math.max(0, sk - R); k <= Math.min(N - 1, sk + R); k++) for (let i = Math.max(0, si - R); i <= Math.min(N - 1, si + R); i++) if (!blk[k * N + i]) { const d = (i - si) ** 2 + (k - sk) ** 2; if (d < bd) { bd = d; best = [i, k]; } }
+      if (!best) return null; [si, sk] = best;
+    }
+    const dist = new Float64Array(N * N).fill(Infinity), prev = new Int32Array(N * N).fill(-1);
+    const heap = [], push = (d, n) => { heap.push([d, n]); let j = heap.length - 1; while (j > 0) { const p = (j - 1) >> 1; if (heap[p][0] <= heap[j][0]) break; [heap[p], heap[j]] = [heap[j], heap[p]]; j = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let j = 0; for (;;) { const l = j * 2 + 1, r = l + 1; let m = j; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === j) break; [heap[m], heap[j]] = [heap[j], heap[m]]; j = m; } } return top; };
+    const s0 = sk * N + si; dist[s0] = 0; push(0, s0);
+    // destino: a célula alcançável mais perto do alvo, parando a ~0,75 m dele (de frente para o equipamento), pelo caminho mais curto
+    const score = (n, g) => Math.max(stand, Math.hypot(wx(n % N) - tx, wz((n / N) | 0) - tz)) + g * 0.03;
+    let goal = s0, gs = score(s0, 0);
+    const nb = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
+    while (heap.length) {
+      const [d, n] = pop(); if (d > dist[n]) continue;
+      const g = d * C; if (stand + g * 0.03 > gs) break;
+      const sc = score(n, g); if (sc < gs) { gs = sc; goal = n; }
+      const i = n % N, k = (n / N) | 0;
+      for (const [di, dk, w] of nb) {
+        const ii = i + di, kk = k + dk; if (ii < 0 || kk < 0 || ii >= N || kk >= N) continue;
+        const m = kk * N + ii; if (blk[m]) continue;
+        if (di && dk && (blk[k * N + ii] || blk[kk * N + i])) continue;                                          // não corta quina
+        const nd = d + w; if (nd < dist[m]) { dist[m] = nd; prev[m] = n; push(nd, m); }
+      }
+    }
+    const cells = []; for (let n = goal; n !== -1; n = prev[n]) cells.push(n); cells.reverse();
+    const free = (ax, az, bx, bz) => { const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / (C * 0.4))); for (let j = 0; j <= n; j++) { const [i, k] = cellOf(ax + (bx - ax) * j / n, az + (bz - az) * j / n); if (blk[k * N + i]) return false; } return true; };
+    const pts = cells.map(n => [wx(n % N), wz((n / N) | 0)]);
+    const out = [[sx, sz]]; let a = 0;                                                                           // "string pulling": só mantém as quinas necessárias
+    if (pts.length && (pts[0][0] - sx) ** 2 + (pts[0][1] - sz) ** 2 > C * C * 2) { out.push(pts[0]); }
+    while (a < pts.length - 1) { let b = pts.length - 1; while (b > a + 1 && !free(pts[a][0], pts[a][1], pts[b][0], pts[b][1])) b--; out.push(pts[b]); a = b; }
+    if (out.length === 1 && pts.length) out.push(pts[pts.length - 1]);
+    return out;
+  }
+
+  /* ---------- caminhada ---------- */
+  const GAIT = { speed: 1.15, accel: 0.35, stride: 1.3, hip: 0.38, knee: 0.85, arm: 0.32, turn: 0.4 };
+  const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  function restPose(p, m) {                                                                                       // devolve braços, cabeça e pernas à pose de repouso
+    p.userData.arms.forEach((a, i) => { a.rotation.set(m.arms[i][0], m.arms[i][1], m.arms[i][2]); a.userData.elbow.rotation.x = m.elbows[i]; });
+    p.userData.hands.forEach((h, i) => h.rotation.set(m.hands[i][0], m.hands[i][1], m.hands[i][2]));
+    p.userData.head.rotation.set(m.headX, m.headY, m.headZ);
+    p.userData.legs.forEach(h => { h.rotation.x = h.userData.rest.x; h.rotation.z = h.userData.rest.z; h.userData.knee.rotation.x = h.userData.knee.userData.rest; });
+    p.position.y = m.positionY; p.rotation.x = m.rootX; p.rotation.z = m.rootZ; p.userData.spine.rotation.set(0, 0, 0);
+  }
+  function sampleLine(path, cum, d) {                                                                             // ponto e direção a uma distância d ao longo do caminho
+    let j = 1; while (j < path.length - 1 && cum[j] < d) j++;
+    const [ax, az] = path[j - 1], [bx, bz] = path[j], L = cum[j] - cum[j - 1] || 1, u = Math.min(1, Math.max(0, (d - cum[j - 1]) / L));
+    return [ax + (bx - ax) * u, az + (bz - az) * u, Math.atan2(bx - ax, bz - az)];
+  }
   function animatePerson(p, dt) {
     if (!p || !p.userData.actionMotion) return;
-    const motion = p.userData.actionMotion;
-    motion.elapsed = Math.min(motion.duration, motion.elapsed + dt);
-    const progress = motion.elapsed / motion.duration;
-    const walkProgress = Math.min(1, progress / 0.66);
-    const walkEase = walkProgress * walkProgress * (3 - 2 * walkProgress);
-    const walkSwing = Math.sin(walkProgress * Math.PI * 4) * (1 - walkProgress);
-    const reachProgress = Math.max(0, Math.min(1, (progress - 0.58) / 0.42));
-    const reach = Math.sin(reachProgress * Math.PI);
-    const arm = p.userData.arms[1];
-    const elbow = arm.userData.elbow;
-    const hand = p.userData.hands[1];
-    const legs = p.userData.legs;
-    p.position.x = motion.positionX + (motion.toX - motion.positionX) * walkEase;
-    p.position.z = motion.positionZ + (motion.toZ - motion.positionZ) * walkEase;
-    p.rotation.y = motion.rotationY + motion.rotationDelta * walkEase;
-    arm.rotation.x = motion.armX + walkSwing * 0.28 + reach * 0.62;
-    arm.rotation.z = motion.armZ - reach * 0.14;
-    elbow.rotation.x = motion.elbowX - reach * 0.72;
-    hand.rotation.x = motion.handX + reach * 0.12;
-    p.userData.head.rotation.x = motion.headX + reach * 0.11;
-    p.userData.head.rotation.y = motion.headY - reach * 0.08;
-    p.position.y = motion.positionY + reach * 0.018;
-    p.rotation.x = motion.rootX + reach * 0.025;
-    legs[0].rotation.z = motion.legLeftZ + walkSwing * 0.48 - reach * 0.025;
-    legs[1].rotation.z = motion.legRightZ - walkSwing * 0.48 + reach * 0.025;
-    if (progress >= 1) {
-      arm.rotation.set(motion.armX, motion.armY, motion.armZ);
-      elbow.rotation.x = motion.elbowX;
-      hand.rotation.x = motion.handX;
-      p.userData.head.rotation.set(motion.headX, motion.headY, motion.headZ);
-      p.position.set(motion.toX, motion.positionY, motion.toZ);
-      p.rotation.set(motion.rootX, motion.rotationY + motion.rotationDelta, motion.rootZ);
-      legs[0].rotation.z = motion.legLeftZ;
-      legs[1].rotation.z = motion.legRightZ;
+    const m = p.userData.actionMotion;
+    m.elapsed += dt;
+    const t = m.elapsed, legs = p.userData.legs, arms = p.userData.arms;
+    // 1) andar pelo caminho com velocidade em trapézio (acelera, mantém, desacelera)
+    let s = m.length, v = 0;
+    if (t < m.walkT) {
+      const a = GAIT.accel, T2 = m.walkT, vmax = m.vmax;
+      if (t < a) { s = 0.5 * vmax / a * t * t; v = vmax * t / a; }
+      else if (t > T2 - a) { const r = T2 - t; s = m.length - 0.5 * vmax / a * r * r; v = vmax * r / a; }
+      else { s = vmax * (t - a / 2); v = vmax; }
+    }
+    if (m.length > 0) {
+      const [x, z] = sampleLine(m.path, m.cum, s), look = sampleLine(m.path, m.cum, Math.min(m.length, s + 0.45));
+      p.position.x = x; p.position.z = z;
+      if (t < m.walkT) p.rotation.y += wrapA(look[2] - p.rotation.y) * Math.min(1, dt * 9);
+    }
+    // 2) ciclo de passo amarrado à distância percorrida: os pés não deslizam no piso
+    const amp = Math.min(1, v / GAIT.speed), ph = s / GAIT.stride * Math.PI * 2;
+    legs.forEach((h, i) => {
+      const f = i ? ph + Math.PI : ph, sw = Math.sin(f);
+      h.rotation.x = h.userData.rest.x - sw * GAIT.hip * amp;                                                     // negativo = perna para frente
+      h.rotation.z = h.userData.rest.z;                                                                           // sem abrir as pernas para os lados
+      const swing = Math.max(0, Math.cos(f));                                                                     // joelho dobra enquanto a perna avança
+      h.userData.knee.rotation.x = (0.06 + swing * swing * GAIT.knee) * amp;
+    });
+    const sw0 = Math.sin(ph);
+    arms.forEach((a, i) => { a.rotation.set(m.arms[i][0] + (i ? -sw0 : sw0) * GAIT.arm * amp, m.arms[i][1], m.arms[i][2]); a.userData.elbow.rotation.x = m.elbows[i] - (0.1 + 0.12 * Math.abs(sw0)) * amp; });
+    const bob = (1 - Math.cos(GAIT.hip * Math.abs(sw0) * amp)) * 0.93 * p.scale.y;                               // a bacia desce quando as pernas abrem
+    p.position.y = m.positionY - bob + Math.abs(Math.cos(ph)) * 0.012 * amp;
+    p.rotation.z = m.rootZ + Math.sin(ph) * 0.02 * amp;                                                           // leve balanço lateral
+    p.userData.spine.rotation.set(0.03 * amp, -sw0 * 0.07 * amp, 0);                                             // ombros giram contra o quadril
+    // 3) virar para o equipamento
+    const tT = t - m.walkT;
+    if (tT >= 0) {
+      const u = Math.min(1, tT / GAIT.turn), e = u * u * (3 - 2 * u);
+      p.rotation.y = m.faceFrom + wrapA(m.face - m.faceFrom) * e;
+    } else m.faceFrom = p.rotation.y;
+    // 4) interação: as mãos vão até o ponto de contato real no equipamento (cinemática inversa), seguram, e voltam
+    const r0 = tT - GAIT.turn * 0.6;
+    if (r0 >= 0 && m.contact === null) m.contact = (m.resolve && m.resolve(p)) || false;
+    const A = ACT[(m.contact && m.contact.kind) || m.kind] || ACT.touch;
+    if (r0 >= 0) {
+      const c = m.contact;
+      const inT = Math.min(1, r0 / ACT.in), outT = Math.min(1, Math.max(0, (r0 - ACT.in - A.hold) / ACT.out));
+      const w = smooth(inT) * (1 - smooth(outT)), hu = Math.min(1, Math.max(0, (r0 - ACT.in) / A.hold));
+      if (c && w > 0) {
+        // agacha para alcançar pontos baixos e inclina o tronco para alcançar mais longe
+        if (c.crouch > 0) crouchLegs(p, c.crouch * w);
+        p.position.y = m.positionY - c.crouch * w * p.scale.y;
+        p.rotation.x = m.rootX + c.lean * w;
+        p.userData.spine.rotation.x = c.bend * w;
+        p.updateMatrixWorld(true);
+        c.hands.forEach((h, i) => { if (h) armIK(p, i, A.move(h, c, hu, i), w, m); });
+        lookAt(p, c.look, w, m);
+      }
+    }
+    if (r0 >= ACT.in + A.hold + ACT.out) {
+      restPose(p, m);
+      const end = m.path[m.path.length - 1]; p.position.x = end[0]; p.position.z = end[1]; p.rotation.y = m.faceFrom + wrapA(m.face - m.faceFrom);
       p.userData.actionMotion = null;
     }
+  }
+
+  /* ---------- interação com o braço ---------- */
+  const smooth = (u) => u * u * (3 - 2 * u);
+  const ARM = { upper: 0.29, lower: 0.34, sh: 1.46 };                                                             // ombro→cotovelo, cotovelo→palma, altura do ombro
+  const _v = new T.Vector3(), _w = new T.Vector3(), _q = new T.Quaternion(), _q0 = new T.Quaternion(), _e = new T.Euler(), _p = new T.Vector3();
+  /* tipos de ação: quanto tempo a mão fica no equipamento e o movimento que faz lá */
+  const ACT = {
+    in: 0.45, out: 0.45,
+    touch:   { hold: 0.9, move: (h, c, u) => _p.copy(h).addScaledVector(c.side, Math.sin(u * Math.PI * 4) * 0.035) },                 // examina passando a mão
+    press:   { hold: 0.75, move: (h, c, u) => _p.copy(h).addScaledVector(c.dir, Math.max(0, Math.sin(u * Math.PI * 2)) * 0.04 - 0.02) }, // aperta duas vezes
+    turn:    { hold: 1.0, move: (h, c, u) => _p.copy(h).addScaledVector(c.side, Math.sin(u * Math.PI) * 0.06).addScaledVector(c.up, Math.sin(u * Math.PI) * 0.03) },  // gira alavanca/chave
+    valve:   { hold: 1.5, move: (h, c, u, i) => { const a = c.ang[i] + Math.sin(u * Math.PI) * 0.9; return _p.copy(c.center).addScaledVector(c.u, Math.cos(a) * c.r).addScaledVector(c.v, Math.sin(a) * c.r); } },  // gira o volante com as duas mãos
+    pull:    { hold: 0.9, move: (h, c, u) => _p.copy(h).addScaledVector(c.dir, -Math.sin(Math.min(1, u * 1.6) * Math.PI * 0.5) * 0.14 * (1 - Math.max(0, u - 0.7) / 0.3)) },  // puxa o cabo
+    talk:    { hold: 1.6, move: (h, c, u) => _p.copy(h).addScaledVector(c.up, Math.sin(u * Math.PI * 3) * 0.05).addScaledVector(c.side, Math.sin(u * Math.PI * 2) * 0.04) },  // gesticula conversando
+  };
+  /* braço de 2 segmentos: resolve o ângulo do cotovelo pela lei dos cossenos e orienta o ombro para a mão chegar ao alvo.
+     Alvo fora de alcance → o braço estica apontando para ele. */
+  function armIK(p, i, world, wgt, m) {
+    const sh = p.userData.arms[i], el = sh.userData.elbow;
+    const t = sh.parent.worldToLocal(_v.copy(world)).sub(sh.position);
+    const L1 = ARM.upper, L2 = ARM.lower, D = Math.min(L1 + L2 - 0.004, Math.max(0.14, t.length()));
+    const phi = Math.PI - Math.acos(Math.min(1, Math.max(-1, (L1 * L1 + L2 * L2 - D * D) / (2 * L1 * L2))));
+    _w.set(0, -L1 - L2 * Math.cos(phi), L2 * Math.sin(phi)).normalize();
+    _q.setFromUnitVectors(_w, t.normalize());
+    _q0.setFromEuler(_e.set(m.arms[i][0], m.arms[i][1], m.arms[i][2]));
+    sh.quaternion.copy(_q0).slerp(_q, wgt);
+    el.rotation.x = m.elbows[i] + (-phi - m.elbows[i]) * wgt;
+    p.userData.hands[i].rotation.x = m.hands[i][0] + (-0.25 - m.hands[i][0]) * wgt;                               // palma voltada para o equipamento
+  }
+  function lookAt(p, target, wgt, m) {
+    if (!target) return;
+    const h = p.userData.head, l = h.parent.worldToLocal(_v.copy(target)).sub(h.position);
+    const yaw = Math.max(-0.9, Math.min(0.9, Math.atan2(l.x, l.z))), pitch = Math.max(-0.6, Math.min(0.5, -Math.atan2(l.y, Math.hypot(l.x, l.z))));
+    h.rotation.y = m.headY + (yaw - m.headY) * wgt; h.rotation.x = m.headX + (pitch - m.headX) * wgt;
+  }
+  /* agachamento: coxa para frente e canela para trás, mantendo o pé sob o quadril */
+  function crouchLegs(p, drop) {
+    let lo = 0, hi = 1.45, a = 0;
+    for (let k = 0; k < 18; k++) { a = (lo + hi) / 2; const d = 0.43 * (1 - Math.cos(a)) + 0.5 * (1 - Math.cos(0.86 * a)); if (d < drop) lo = a; else hi = a; }
+    p.userData.legs.forEach(h => { h.rotation.x = h.userData.rest.x - a; h.userData.knee.rotation.x = 1.86 * a; });
+  }
+  /* ponto de contato: superfície do equipamento mais próxima do ombro, achada por raios contra as malhas da peça clicada */
+  const _ray = new T.Raycaster(), _box = new T.Box3();
+  function resolveContact(p, groups, kind, anchor) {
+    p.updateMatrixWorld(true);
+    const ry = p.rotation.y, fwd = new T.Vector3(Math.sin(ry), 0, Math.cos(ry)), side = new T.Vector3(Math.cos(ry), 0, -Math.sin(ry)), up = new T.Vector3(0, 1, 0);
+    const shW = (i) => p.userData.arms[i].getWorldPosition(new T.Vector3());
+    const sh = shW(1), visible = (o) => { for (let q = o; q; q = q.parent) if (q.visible === false) return false; return true; };
+    const meshes = []; groups.forEach(g => g.traverse(o => { if (o.isMesh && visible(o)) meshes.push(o); }));
+    const anc = anchor ? new T.Vector3(...anchor) : sh.clone().addScaledVector(fwd, 0.5);
+    let person = null; groups.forEach(g => { if (g.userData.legs) person = g; });
+    const out = { kind, dir: fwd, side, up, crouch: 0, lean: 0, bend: 0, hands: [null, null], look: anc.clone() };
+    if (person || kind === 'talk') {                                                                              // conversa: gesto com a mão na altura do peito, olhando para a pessoa
+      const other = person ? person.localToWorld(new T.Vector3(0, 1.62, 0)) : anc;
+      out.kind = 'talk'; out.look = other; const d = other.clone().sub(sh); d.y = 0; d.normalize();
+      out.hands[1] = sh.clone().addScaledVector(d, 0.36).addScaledVector(up, -0.22); out.dir = d; return out;
+    }
+    let best = null, bd = Infinity;
+    const tryTo = (pt) => { const d = pt.clone().sub(sh); const L = d.length(); if (L < 1e-3) return; _ray.set(sh, d.normalize()); _ray.far = 4; const h = _ray.intersectObjects(meshes, false)[0]; if (h && h.distance < bd) { bd = h.distance; best = h.point.clone(); } };
+    if (meshes.length) {
+      groups.forEach(g => { _box.setFromObject(g); tryTo(_box.getCenter(new T.Vector3())); tryTo(_box.clampPoint(sh, new T.Vector3())); tryTo(_box.clampPoint(new T.Vector3(sh.x, Math.min(sh.y, _box.max.y), sh.z), new T.Vector3())); });
+      tryTo(anc);
+      for (let a = -3; a <= 3; a++) for (let b = -3; b <= 2; b++) tryTo(sh.clone().addScaledVector(fwd, 1).addScaledVector(side, a * 0.25).addScaledVector(up, b * 0.25));
+      if (!best) { groups.forEach(g => { _box.setFromObject(g); const c = _box.clampPoint(sh, new T.Vector3()); if (c.distanceTo(sh) < bd) { bd = c.distanceTo(sh); best = c; } }); }
+    }
+    if (!best) best = anc.clone();
+    // volante: as duas mãos no aro
+    let wheel = null; if (kind === 'valve') groups.forEach(g => g.traverse(o => { if (!wheel && o.userData.dyn && o !== g && visible(o)) wheel = o; }));
+    const reach = ARM.upper + ARM.lower;
+    const plan = (pt) => {                                                                                        // agacha/inclina o necessário para a mão chegar
+      const sy = ARM.sh * p.scale.y, hor = Math.hypot(pt.x - sh.x, pt.z - sh.z);
+      out.crouch = pt.y < sy - 0.55 && hor < 0.9 ? Math.min(0.42, (sy - 0.5) - pt.y) : 0;
+      // inclina a partir da cintura (até ~35°) e, se ainda faltar, um pouco o corpo todo
+      let bend = 0, lean = 0;
+      if (pt.y > 0.2 && pt.y < sy + 0.35) for (let k = 0; k < 24; k++) {
+        const sY = 1.02 + 0.44 * Math.cos(bend) - out.crouch, sF = 0.44 * Math.sin(bend) + 1.46 * Math.sin(lean);
+        const dy = sY - pt.y, needH = Math.sqrt(Math.max(0, reach * reach - dy * dy));
+        if (hor - sF <= needH - 0.03) break;
+        if (bend < 0.62) bend += 0.04; else if (lean < 0.08) lean += 0.01; else break;
+      }
+      out.bend = bend; out.lean = lean;
+    };
+    if (wheel) {
+      const c = wheel.getWorldPosition(new T.Vector3()), n = new T.Vector3(0, 0, 1).transformDirection(wheel.matrixWorld);
+      let u = side.clone().addScaledVector(n, -side.dot(n)); if (u.lengthSq() < 1e-4) u = fwd.clone().addScaledVector(n, -fwd.dot(n)); u.normalize();
+      const v = new T.Vector3().crossVectors(n, u).normalize(); if (v.dot(sh.clone().sub(c)) < 0) v.negate();
+      _box.setFromObject(wheel); const r = Math.max(0.08, Math.min(0.35, (_box.max.x - _box.min.x + _box.max.z - _box.min.z + _box.max.y - _box.min.y) / 3 * 0.5));
+      Object.assign(out, { center: c, u, v, r, ang: [Math.PI - 0.5, 0.5] });                                      // mão de cada lado do aro, na metade mais perto do corpo
+      [0, 1].forEach(i => { out.hands[i] = c.clone().addScaledVector(u, Math.cos(out.ang[i]) * r).addScaledVector(v, Math.sin(out.ang[i]) * r); });
+      // braço 0 fica no lado -x do corpo: garante que cada mão pegue o lado do aro do seu ombro
+      if (out.hands[0].clone().sub(c).dot(side) > 0) { out.ang.reverse(); out.hands.reverse(); }
+      plan(c); out.look = c.clone(); out.dir = c.clone().sub(sh).setY(0).normalize(); return out;
+    }
+    if (kind === 'valve') out.kind = 'turn';                                                                      // sem volante visível: gira com uma mão
+    out.hands[1] = best; out.look = best.clone(); out.dir = best.clone().sub(sh).setY(0).normalize(); plan(best);
+    return out;
   }
 
   /* ---------- tonemapping (espelha o ACES do three.js, para o pipeline HDR) ---------- */
@@ -694,7 +944,7 @@ const W = (() => {
     sun.target.position.set(...o.target); scene.add(sun); scene.add(sun.target);
     const fill = new T.DirectionalLight(0xdce7f0, 0.42); fill.position.set(-8, 9, 10); scene.add(fill);
     const rim = new T.DirectionalLight(0xffdfb8, 0.24); rim.position.set(4, 10, -8); scene.add(rim);
-    const labels = [], ticks = [], motions = [], v = new T.Vector3(); let sideW = 0, activePerson = null;
+    const labels = [], ticks = [], motions = [], v = new T.Vector3(); let sideW = 0, activePerson = null, nav = null;
     function resize() {
       const w = el.clientWidth || window.innerWidth, h = el.clientHeight || window.innerHeight;
       renderer.setSize(w, h); camera.aspect = w / h;
@@ -792,44 +1042,47 @@ const W = (() => {
         controls.mouseButtons.LEFT = enabled ? T.MOUSE.PAN : T.MOUSE.ROTATE;
         controls.touches.ONE = enabled ? T.TOUCH.PAN : T.TOUCH.ROTATE;
       },
-      perform(person, anchor) {
+      perform(person, anchor, id, kind) {
         if (!person?.userData.arms?.[1]) return;
+        if (activePerson && activePerson !== person && activePerson.userData.actionMotion) { restPose(activePerson, activePerson.userData.actionMotion); activePerson.userData.actionMotion = null; }
+        if (person.userData.actionMotion) restPose(person, person.userData.actionMotion);                      // ação anterior interrompida: volta à pose base antes de recomeçar
         activePerson = person;
-        const arm = person.userData.arms[1];
-        const head = person.userData.head;
-        const legs = person.userData.legs;
-        const [targetX, , targetZ] = anchor || [person.position.x, 0, person.position.z];
-        const dx = targetX - person.position.x;
-        const dz = targetZ - person.position.z;
-        const distance = Math.hypot(dx, dz);
-        const approach = Math.max(0, distance - 1.1);
-        const directionX = distance ? dx / distance : 0;
-        const directionZ = distance ? dz / distance : 0;
-        const targetRotation = distance > 0.15 ? Math.atan2(dx, dz) : person.rotation.y;
-        const rotationDelta = Math.atan2(Math.sin(targetRotation - person.rotation.y), Math.cos(targetRotation - person.rotation.y));
-        person.userData.actionMotion = {
-          duration: Math.max(1.35, Math.min(6, approach / 2.2)),
-          elapsed: 0,
-          armX: arm.rotation.x,
-          armY: arm.rotation.y,
-          armZ: arm.rotation.z,
-          elbowX: arm.userData.elbow.rotation.x,
-          handX: person.userData.hands[1].rotation.x,
-          headX: head.rotation.x,
-          headY: head.rotation.y,
-          headZ: head.rotation.z,
-          positionX: person.position.x,
-          positionY: person.position.y,
-          positionZ: person.position.z,
-          toX: person.position.x + directionX * approach,
-          toZ: person.position.z + directionZ * approach,
-          rotationY: person.rotation.y,
-          rotationDelta,
-          rootX: person.rotation.x,
-          rootZ: person.rotation.z,
-          legLeftZ: legs[0].rotation.z,
-          legRightZ: legs[1].rotation.z,
+        const arms = person.userData.arms, head = person.userData.head;
+        const base = person.userData.actionMotion || {
+          arms: arms.map(a => [a.rotation.x, a.rotation.y, a.rotation.z]), elbows: arms.map(a => a.userData.elbow.rotation.x),
+          hands: person.userData.hands.map(h => [h.rotation.x, h.rotation.y, h.rotation.z]), headX: head.rotation.x, headY: head.rotation.y, headZ: head.rotation.z,
+          positionY: person.position.y, rootX: person.rotation.x, rootZ: person.rotation.z,
         };
+        const sx = person.position.x, sz = person.position.z;
+        let [tx, , tz] = anchor || [sx, 0, sz], stand = NAV.stand;
+        const groups = (id && hits[id] || []).filter(g => g !== person);
+        if (groups.some(g => g.userData.legs)) { const q = groups.find(g => g.userData.legs); tx = q.position.x; tz = q.position.z; stand = 0.95; }   // conversa: para a ~1 m da pessoa
+        else if (groups.length) {                                                                                 // equipamento: chega o mais perto possível da peça, do lado do rótulo
+          const bb = new T.Box3(); groups.forEach(g => bb.expandByObject(g));
+          if (!bb.isEmpty()) { tx = Math.min(bb.max.x, Math.max(bb.min.x, tx)); tz = Math.min(bb.max.z, Math.max(bb.min.z, tz)); stand = 0.2; }
+        }
+        let path = null;
+        try {
+          const sig = navSignature(scene);                                                                    // refaz o mapa se algo apareceu, sumiu ou mudou de lugar (cones, proteções, etc.)
+          if (!nav || nav.sig !== sig) { nav = buildNav(scene, sx, sz); nav.sig = sig; }
+          const others = PEOPLE.filter(q => q !== person && q.visible !== false && (() => { for (let a = q; a; a = a.parent) if (a === scene) return true; return false; })()).map(q => [q.position.x, q.position.z]);
+          path = planPath(nav, sx, sz, tx, tz, others, stand);
+        } catch (err) { console.warn('navegação indisponível', err); }
+        if (!path) {                                                                                             // reserva: linha reta parando a 1,1 m do alvo (comportamento antigo)
+          const d = Math.hypot(tx - sx, tz - sz), ap = Math.max(0, d - 1.1);
+          path = [[sx, sz], [sx + (d ? (tx - sx) / d : 0) * ap, sz + (d ? (tz - sz) / d : 0) * ap]];
+        }
+        const cum = [0]; for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]));
+        let length = cum[cum.length - 1];
+        if (length < 0.12) { path = [[sx, sz], [sx, sz]]; cum.length = 0; cum.push(0, 0); length = 0; }
+        const end = path[path.length - 1], fx = tx - end[0], fz = tz - end[1];
+        const walkT = length > 0 ? length / GAIT.speed + GAIT.accel : 0;
+        person.userData.actionMotion = Object.assign(base, {
+          path, cum, length, walkT, vmax: length > 0 ? length / (walkT - GAIT.accel) : 0, elapsed: 0,
+          face: Math.hypot(fx, fz) > 0.05 ? Math.atan2(fx, fz) : person.rotation.y, faceFrom: person.rotation.y,
+          kind: kind || 'touch', contact: null,
+          resolve: (p) => { try { return resolveContact(p, (id && hits[id] || []).filter(g => g !== p), kind || 'touch', anchor); } catch (err) { console.warn('contato indisponível', err); return null; } },
+        });
       },
       hit(group, id) {
         group.traverse(m => { if (m.isMesh && m.material) m.material = m.material.clone(); });
@@ -970,4 +1223,4 @@ const W = (() => {
   }
 
   return { create, shed, stain, bake, bolts, floorLine, beams, dust, steam, MAT, mesh, rbox, box, cyl, cylX, cylZ, sphere, torus, at, ibeam, plate, textPlate, padlock, person, LOW };
-})();
+})();;

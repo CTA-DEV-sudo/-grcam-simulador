@@ -493,6 +493,8 @@ const SCN = (() => {
     const op = person({ suit: 0x2b3a55, vest: 0xff6a13, glove: 0x2f6db5, mask: true, earmuff: false }); op.position.set(6.2, 0, 2.2); op.rotation.y = -0.5;
     R.parts.operador = ctx.hit(op, 'operador'); R.anchors.operador = [6.2, 1.4, 2.2]; R.names.operador = 'Operador da área';
     // você (mantenedor)
+    // como o boneco interage com cada ponto (touch = examina, press = aperta, turn = gira, valve = volante, pull = puxa, talk = conversa)
+    R.kinds = { motor: 'touch', acopl: 'touch', bomba: 'touch', linha: 'touch', vsuc: 'valve', vrec: 'valve', manometro: 'touch', dreno: 'turn', ccm: 'press', botoeira: 'press', epi: 'press', operador: 'talk' };
     const me = person({ suit: 0x3d4a3a, helmet: 0xd8a21c, mask: true, earmuff: true, glove: 0x2f6db5 }); me.position.set(-1.8, 0, 2.4); me.rotation.y = 2.6; scene.add(me); R.me = me;
     // animação
     let pv = R.state.pressure, shake = 0;
@@ -608,7 +610,8 @@ const SCN = (() => {
     const op = person({ suit: 0x2b3a55, pose: 'hold', skin: 0xb07c5c, vest: 0xc6e22a, earmuff: true }); op.position.set(4.8, 0, 2.6); op.rotation.y = -0.6;
     const pend = rbox(0.12, 0.26, 0.08, MAT.paint(0xd2a024, { wear: 0.3 }), 0.02); pend.position.set(0, -0.1, 0.05); pend.rotation.x = 1.0; op.userData.hands[1].add(pend);
     R.parts.controle = ctx.hit(op, 'controle'); R.anchors.controle = [4.8, 1.3, 2.6]; R.names.controle = 'Operador com o controle da ponte';
-    const me = person({ suit: 0x3d4a3a, helmet: 0xd8a21c, earmuff: true, harness: 0xd2641a }); me.position.set(-4.6, 0, 3.4); me.rotation.y = 2.4; scene.add(me);
+    R.kinds = { painel: 'press', area: 'touch', chave: 'turn', aux: 'turn', caixa: 'press', controle: 'talk' };
+    const me = person({ suit: 0x3d4a3a, helmet: 0xd8a21c, earmuff: true, harness: 0xd2641a }); me.position.set(-4.6, 0, 3.4); me.rotation.y = 2.4; scene.add(me); R.me = me;
     // animação
     let tx = 0, hy = -3.0;
     ctx.tick((dt, t) => {
@@ -712,7 +715,8 @@ const SCN = (() => {
     R.parts.operador = ctx.hit(op, 'operador'); R.anchors.operador = [3.2, 1.4, 3.0]; R.names.operador = 'Operador da área';
     const ct = person({ suit: 0x5a6b2a, helmet: 0x2f6db5, vest: 0xc6e22a, glove: 0x6a6f74, earmuff: false }); ct.position.set(-2.4, 0, 3.4); ct.rotation.y = 0.3;
     R.parts.contratado = ctx.hit(ct, 'contratado'); R.anchors.contratado = [-2.4, 1.4, 3.4]; R.names.contratado = 'Mecânico da contratada';
-    const me = person({ suit: 0x3d4a3a, helmet: 0xd8a21c, earmuff: true }); me.position.set(-4.4, 0, 2.6); me.rotation.y = 2.8; scene.add(me);
+    R.kinds = { esticador: 'touch', cabo: 'pull', rolete: 'touch', botoeira: 'press', painel: 'press', caixa: 'press', operador: 'talk', contratado: 'talk' };
+    const me = person({ suit: 0x3d4a3a, helmet: 0xd8a21c, earmuff: true }); me.position.set(-4.4, 0, 2.6); me.rotation.y = 2.8; scene.add(me); R.me = me;
     // animação
     let sp = 1;
     ctx.tick((dt) => {
@@ -728,4 +732,4 @@ const SCN = (() => {
     return R;
   }
   return { pump, crane, conveyor };
-})();
+})();;

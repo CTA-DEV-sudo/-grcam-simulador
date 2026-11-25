@@ -92,7 +92,7 @@
   }
   function act(i) {
     const a = G._acts[i]; if (!a) return;
-    const result = a.run(); if (result !== false) ctx.perform(R.me, R.anchors[G.sel]); render();
+    const result = a.run(); if (result !== false) ctx.perform(R.me, R.anchors[G.sel], G.sel, R.kinds && R.kinds[G.sel]); render();
     if (!G.cen && SA.cen.when(S) && !$('#modal').classList.contains('on')) setTimeout(openCen, 700);
   }
 
@@ -220,4 +220,4 @@
   $('#eyebrow').textContent = `SA${SA.id} · ${SA.area} · ${SA.hora}`;
   $('#title').textContent = SA.titulo; $('#foco').textContent = SA.foco;
   hud(); render(); ctx.resize();
-})();
+})();;
